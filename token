@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CHK TOKEN - RESILIENT CDM</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+        }
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 5px;
+        }
+        textarea, button {
+            background-color: white;
+            color: black;
+        }
+    </style>
+    <script>
+        function verificarTokens() {
+            var tokens = document.getElementById("tokens").value.split("\n");
+            var tokensValidos = [];
+            var tokensInvalidos = [];
+            var count = 0;
+            var verificarBot = document.getElementById("botCheckbox").checked;
+            var verificarConta = document.getElementById("contaCheckbox").checked;
+
+            function verificarToken(token) {
+                console.log("Verificando token: " + token);
+                var xhr = new XMLHttpRequest();
+                xhr.open("GET", "https://discord.com/api/v10/users/@me", true);
+                xhr.setRequestHeader("Authorization", token);
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === 4) {
+                        var icon = "👤"; // Ícone padrão
+                        var hasNitro = false; // Placeholder para Nitro
+                        var nitroDuration = "Desconhecido"; // Placeholder para duração do Nitro
+                        var is2FA = false; // Placeholder para verificação de 2FA
+                        var email = "Desconhecido"; // Placeholder para o e-mail
+
+                        if (xhr.status === 200) {
+                            var response = JSON.parse(xhr.responseText);
+                            var username = response.username;
+                            var isBot = response.bot;
+                            icon = isBot ? "🤖" : "👤";
+                            hasNitro = response.premium_type > 0; // Verifica se o usuário tem Nitro
+                            
+                            // Simulação da duração do Nitro
+                            if (hasNitro) {
+                                nitroDuration = "Ativo por 6 meses"; // Exemplo fictício
+                            }
+
+                            // Captura o e-mail da resposta
+                            email = response.email || "Não disponível";
+
+                            // Verificação se a conta está com 2FA
+                            if (xhr.status === 403 && response.message === "Two Factor Required") {
+                                is2FA = true;
+                            }
+
+                            if ((verificarBot && isBot) || (verificarConta && !isBot)) {
+                                token = "- " + icon + " " + token + " (" + username + ") " + 
+                                        "E-mail: " + email + 
+                                        " Nitro: " + (hasNitro ? "Sim" : "Não") + 
+                                        " Duração: " + nitroDuration + 
+                                        " 2FA: " + (is2FA ? "Sim" : "Não");
+                                tokensValidos.push(token);
+                            } else {
+                                tokensInvalidos.push("- " + icon + " " + token + 
+                                                     " E-mail: " + email + 
+                                                     " Nitro: " + (hasNitro ? "Sim" : "Não") + 
+                                                     " Duração: " + nitroDuration + 
+                                                     " 2FA: " + (is2FA ? "Sim" : "Não"));
+                            }
+                        } else {
+                            tokensInvalidos.push("- " + icon + " " + token + 
+                                                 " (Erro ao verificar) E-mail: " + email + 
+                                                 " Nitro: " + (hasNitro ? "Sim" : "Não") + 
+                                                 " Duração: " + nitroDuration + 
+                                                 " 2FA: " + (is2FA ? "Sim" : "Não"));
+                        }
+                        count++;
+                        if (count === tokens.length) {
+                            exibirResultados();
+                        }
+                    }
+                };
+                xhr.send();
+            }
+            function exibirResultados() {
+                var resultadoDiv = document.getElementById("resultado");
+                resultadoDiv.innerHTML = ""; // Limpa o conteúdo anterior
+                var tokensValidasTexto = "Tokens válidos:\n" + tokensValidos.join("\n");
+                var tokensInvalidasTexto = "Tokens inválidos:\n" + tokensInvalidos.join("\n");
+                resultadoDiv.innerHTML = "<h2>Resultados:</h2><pre>" + tokensValidasTexto + "\n\n" + tokensInvalidasTexto + "</pre>";
+            }
+            tokens.forEach(function (token) {
+                verificarToken(token);
+            });
+        }
+    </script>
+</head>
+<body>
+    <h1>TOKEN CHECKER - CDM CYBERS</h1>
+    <div class="checkbox-container">
+        <input type="checkbox" id="botCheckbox">
+        <label for="botCheckbox">Bot</label>
+    </div>
+    <div class="checkbox-container">
+        <input type="checkbox" id="contaCheckbox">
+        <label for="contaCheckbox">Conta</label>
+    </div>
+    <textarea id="tokens" placeholder="Insira os tokens do Discord (um por linha)" rows="10" cols="50"></textarea>    <button onclick="verificarTokens()">Verificar</button>
+    <div id="resultado"></div> <!-- Div para exibir os resultados -->
+</body>
+</html>
